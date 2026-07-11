@@ -26,10 +26,10 @@ jobs:
         with:
           python-version: "3.12"
       - run: python -m pip install --upgrade pip --quiet
-      - run: pip install --quiet -r requirements.txt pytest
+      - run: python -m pip install --quiet -r requirements.txt pytest
       - run: python -m compileall -q qrdesk_gateway
       - name: Run deterministic tests
-        run: pytest -q --junitxml=pytest-results.xml
+        run: python -m pytest -q --junitxml=pytest-results.xml
       - name: Upload test report
         if: always()
         uses: actions/upload-artifact@v4
