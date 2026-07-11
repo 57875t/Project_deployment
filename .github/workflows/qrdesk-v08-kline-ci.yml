@@ -1,0 +1,29 @@
+name: QR Desk v0.8 K-line CI
+
+on:
+  pull_request:
+    paths:
+      - "qrdesk_gateway/**"
+      - "tests/**"
+      - "requirements.txt"
+      - "docs/V0.8_KLINE_CORE_AUDIT.md"
+  push:
+    branches:
+      - "agent/qrdesk-v0.8-kline-core"
+    paths:
+      - "qrdesk_gateway/**"
+      - "tests/**"
+      - "requirements.txt"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --upgrade pip
+      - run: pip install -r requirements.txt pytest
+      - run: python -m compileall -q qrdesk_gateway
+      - run: pytest -q
