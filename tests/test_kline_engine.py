@@ -1,4 +1,16 @@
-from qrdesk_gateway.kline_engine import aggregate_bars, audit_bars, normalize_bars
+from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
+
+from qrdesk_gateway.kline_engine import (
+    aggregate_bars,
+    aggregate_bars_strict,
+    audit_bars,
+    normalize_bars,
+)
+
+
+def _ms(value: str) -> int:
+    return int(datetime.fromisoformat(value.replace("Z", "+00:00")).timestamp() * 1000)
 
 
 def test_normalize_rejects_invalid_and_future_bars():
@@ -17,6 +29,29 @@ def test_normalize_rejects_invalid_and_future_bars():
     assert counters == {"duplicateCount": 1, "invalidCount": 1, "futureCount": 1}
 
 
+def test_normalize_parses_exchange_local_iso_date():
+    bars, counters = normalize_bars(
+        [
+            {
+                "time": "2026-07-10",
+                "open": 10,
+                "high": 11,
+                "low": 9,
+                "close": 10,
+                "volume": 100,
+            }
+        ],
+        timezone_name="Asia/Shanghai",
+        now_ms=_ms("2026-07-11T00:00:00Z"),
+    )
+    local = datetime.fromtimestamp(
+        bars[0]["time"] / 1000,
+        tz=timezone.utc,
+    ).astimezone(ZoneInfo("Asia/Shanghai"))
+    assert local.date().isoformat() == "2026-07-10"
+    assert counters == {"duplicateCount": 0, "invalidCount": 0, "futureCount": 0}
+
+
 def test_aggregate_5m_to_15m_is_deterministic():
     bars = [
         {"time": 0, "open": 10.0, "high": 12.0, "low": 9.0, "close": 11.0, "volume": 100.0},
@@ -25,6 +60,20 @@ def test_aggregate_5m_to_15m_is_deterministic():
     ]
     result = aggregate_bars(bars, target_seconds=900)
     assert result == [{"time": 0, "open": 10.0, "high": 14.0, "low": 9.0, "close": 13.0, "volume": 600.0}]
+
+
+def test_strict_aggregation_drops_partial_bucket():
+    bars = [
+        {"time": 0, "open": 10.0, "high": 12.0, "low": 9.0, "close": 11.0, "volume": 100.0},
+        {"time": 300_000, "open": 11.0, "high": 13.0, "low": 10.0, "close": 12.0, "volume": 200.0},
+    ]
+    result, partial_count = aggregate_bars_strict(
+        bars,
+        source_seconds=300,
+        target_seconds=900,
+    )
+    assert result == []
+    assert partial_count == 1
 
 
 def test_audit_calculates_change_and_gaps():
