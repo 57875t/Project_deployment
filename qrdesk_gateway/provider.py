@@ -9,7 +9,11 @@ from zoneinfo import ZoneInfo
 
 import httpx
 
-from .kline_engine import aggregate_bars_strict, audit_bars, normalize_bars
+from .kline_engine import (
+    aggregate_bars_strict,
+    audit_bars,
+    normalize_bars,
+)
 from .session_engine import calibrate_session_bars
 
 
@@ -106,7 +110,10 @@ async def _massive(
     interval, multiplier, timespan, lookback = RANGES[range_key]
     end = datetime.now(timezone.utc).date()
     start = end.fromordinal(end.toordinal() - lookback)
-    url = f"https://api.massive.com/v2/aggs/ticker/{symbol}/range/{multiplier}/{timespan}/{start}/{end}"
+    url = (
+        f"https://api.massive.com/v2/aggs/ticker/{symbol}/range/"
+        f"{multiplier}/{timespan}/{start}/{end}"
+    )
     async with httpx.AsyncClient(
         timeout=float(os.getenv("QRDESK_PROVIDER_TIMEOUT_SECONDS", "12"))
     ) as client:
@@ -134,7 +141,10 @@ async def _massive(
         }
         for row in rows
     ]
-    bars, normalize_counters = normalize_bars(raw, timezone_name=timezone_name)
+    bars, normalize_counters = normalize_bars(
+        raw,
+        timezone_name=timezone_name,
+    )
     bars, session_counters, snapshot = calibrate_session_bars(
         bars,
         market=market,
@@ -163,7 +173,12 @@ async def _eodhd(
 
     symbol, market, _, _, timezone_name = INSTRUMENTS[instrument]
     interval = RANGES[range_key][0]
-    provider_interval = {"5m": "5m", "15m": "5m", "1h": "1h", "1d": "d"}[interval]
+    provider_interval = {
+        "5m": "5m",
+        "15m": "5m",
+        "1h": "1h",
+        "1d": "d",
+    }[interval]
     endpoint = "eod" if interval == "1d" else "intraday"
     url = f"https://eodhd.com/api/{endpoint}/{symbol}"
     params: dict[str, Any] = {"api_token": token, "fmt": "json"}
@@ -188,7 +203,10 @@ async def _eodhd(
         }
         for row in rows
     ]
-    bars, normalize_counters = normalize_bars(raw, timezone_name=timezone_name)
+    bars, normalize_counters = normalize_bars(
+        raw,
+        timezone_name=timezone_name,
+    )
 
     source_interval_seconds = 300 if interval == "15m" else INTERVAL_SECONDS[interval]
     bars, session_counters, snapshot = calibrate_session_bars(
@@ -264,7 +282,11 @@ async def get_bundle(
             )
             last_price = float(last["close"])
             change = None if previous_close is None else last_price - previous_close
-            change_percent = None if previous_close in (None, 0) else change / previous_close * 100
+            change_percent = (
+                None
+                if previous_close in (None, 0)
+                else change / previous_close * 100
+            )
             warnings = _append_quality_warnings(warnings, counters)
 
             return {
@@ -291,6 +313,8 @@ async def get_bundle(
                     "barChangePercent": quality.change_percent,
                     "session": market_session["state"],
                     "updateTime": update_time,
+                    "priceSemantics": "last-completed-bar-close",
+                    "isIndependentQuote": False,
                 },
                 "marketSession": market_session,
                 "fundamentals": {},
@@ -314,10 +338,18 @@ async def get_bundle(
                     "recency": recency,
                     "asOf": update_time,
                     "fetchedAt": datetime.now(timezone.utc).isoformat(),
-                    "adjustment": "provider-adjusted" if name == "Massive" else "provider-default",
+                    "adjustment": (
+                        "provider-adjusted"
+                        if name == "Massive"
+                        else "provider-default"
+                    ),
                     "barTimestampConvention": "provider-start-assumed",
+                    "quoteSemantics": "last-completed-bar-close",
                     "calendar": market_session["calendar"],
-                    "delaySeconds": max(0, time.time() - int(last["time"]) / 1000),
+                    "delaySeconds": max(
+                        0,
+                        time.time() - int(last["time"]) / 1000,
+                    ),
                     "requestId": uuid.uuid4().hex,
                     "warnings": warnings,
                     "attempts": attempts,
@@ -325,6 +357,12 @@ async def get_bundle(
                 },
             }
         except Exception as exc:
-            attempts.append({"provider": name, "ok": False, "error": str(exc)})
+            attempts.append(
+                {
+                    "provider": name,
+                    "ok": False,
+                    "error": str(exc),
+                }
+            )
 
     raise RuntimeError(f"all configured providers failed: {attempts}")
