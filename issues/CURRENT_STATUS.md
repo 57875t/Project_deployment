@@ -1,36 +1,46 @@
-# Current Project Status
+# QR Desk Current Status
 
-## PASS
+## Version
 
-- GitHub repository is connected and writable.
-- Dedicated QR Desk workspace branch exists.
-- Root-level Railway entrypoint and dependency file exist.
-- Railway config-as-code exists.
-- Read-only FastAPI gateway contract exists.
-- API keys are designed to remain server-side.
-- Workflow and project Skill are stored in the repository.
+`v0.8 K-line Core — Phase 2`
 
-## NEEDS FIX
+## Current verdict
 
-- EODHD `6mo / 1d` must use the provider's dedicated end-of-day endpoint rather than the intraday path.
-- Exact historical-date mode is not implemented.
-- 15-minute bars from a 5-minute source need deterministic aggregation and validation.
-- Market-session and holiday logic needs a dedicated exchange-calendar layer.
-- Provider errors should use stable internal error codes rather than raw exception text.
-- Automated unit and contract tests need to be moved to the root workspace and run in CI.
+**PARTIAL PASS / Draft**
 
-## BLOCKED
+## Completed
 
-- Live provider acceptance requires at least one valid cloud API credential.
-- Railway deployment requires Railway to be linked to the GitHub account `57875t` and granted access to `Project_deployment`.
-- Final HTML integration requires the generated Railway HTTPS domain.
+- [x] Unified QR Desk repository structure
+- [x] Read-only cloud market-data gateway
+- [x] Provider fail-closed behavior
+- [x] OHLCV invariant validation
+- [x] Duplicate and future timestamp handling
+- [x] Exchange-local timestamp parsing
+- [x] XNYS, XHKG and XSHG calendar mapping
+- [x] Weekend, holiday, lunch-break and session-state logic
+- [x] Off-session bar removal
+- [x] Incomplete intraday and daily bar removal
+- [x] Strict 5m → 15m aggregation
+- [x] Session-aware gap counting
+- [x] Previous-session change separated from last-bar change
+- [x] Deterministic test suite: 9 passed
+- [x] GitHub Actions K-line CI workflow added
 
-## Next acceptance sequence
+## Open
 
-1. Deploy branch `agent/qrdesk-workspace-restructure` on Railway.
-2. Generate a public Railway domain.
-3. Add one provider key as a Railway Variable.
-4. Verify `/v1/market/health`.
-5. Run US/HK/CN test requests.
-6. Insert the Railway HTTPS base URL into the QR Desk HTML.
-7. Run the full Nitpick and Acceptance workflow.
+- [ ] Verify Massive timestamp convention with licensed responses
+- [ ] Verify EODHD timestamp convention for US/HK/CN
+- [ ] Validate early-close and special-session samples
+- [ ] Validate Shenzhen schedule equivalence against exchange reference
+- [ ] Reconcile adjusted prices and corporate actions
+- [ ] Add dual-provider cross-check and tolerance report
+- [ ] Wire `marketSession`, `quality`, `change` and `barChange` into HTML
+- [ ] Compare last completed candle and percentage change against a reference UI
+- [ ] Complete live entitlement and latency acceptance
+
+## Truth boundary
+
+- No API credentials in the browser or repository.
+- No simulated candles in real-data responses.
+- No interpolation or synthetic gap filling.
+- No LIVE PASS until licensed provider output is compared against a reference feed.
