@@ -1,0 +1,5 @@
+# Official Moomoo Python SDK; current official repository version observed during this build: 10.02.6208
+moomoo-api>=10.2,<11
+fastapi>=0.115,<1
+uvicorn[standard]>=0.30,<1
+pandas>=2.0,<3
